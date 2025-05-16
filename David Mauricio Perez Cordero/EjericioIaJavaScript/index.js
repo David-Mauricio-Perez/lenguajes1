@@ -74,31 +74,58 @@ async function opcionCrearEstudiante(curso) {
     console.log("\n--- Crear Nuevo Estudiante ---");
     const id = await preguntar("Ingrese ID del estudiante: ");
     const nombre = await preguntar("Ingrese nombre del estudiante: ");
-    const calificaciones = [];
-    let continuarIngresando = true;
-
-    while (continuarIngresando) {
-        const califStr = await preguntar(`Ingrese calificación (o 'fin' para terminar): `);
-        if (califStr.toLowerCase() === 'fin') {
-            continuarIngresando = false;
-        } else {
-            const califNum = parseFloat(califStr);
-            if (!isNaN(califNum)) {
-                calificaciones.push(califNum);
-            } else {
-                console.log("⚠️ Calificación inválida. Por favor ingrese un número.");
-            }
-        }
-    }
-
+    // Ya no se piden calificaciones aquí
     if (id && nombre) {
-        const nuevoEstudiante = new Estudiante(id, nombre, calificaciones);
+        const nuevoEstudiante = new Estudiante(id, nombre, []);
         curso.agregarEstudiante(nuevoEstudiante);
         console.log(`\n👍 Estudiante "${nombre}" agregado al curso.`);
         await guardarCurso(curso); // Guardar después de agregar
     } else {
         console.log("\n⚠️ ID y Nombre son obligatorios. No se agregó el estudiante.");
     }
+}
+
+// [2] Agregar nota de estudiante
+async function opcionAgregarNotaEstudiante(curso) {
+    if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes en el curso.");
+        return;
+    }
+    console.log("\n--- Agregar Nota de Estudiante ---");
+    const id = await preguntar("Ingrese el ID del estudiante: ");
+    const estudiante = curso.estudiantes.find(e => e.id === id);
+    if (!estudiante) {
+        console.log("⚠️ No se encontró un estudiante con ese ID.");
+        return;
+    }
+
+    while (true) {
+        const califStr = await preguntar("Ingrese calificación (o escriba 'fin' para terminar): ");
+        if (califStr.trim().toLowerCase() === 'fin') break;
+        const califNum = parseFloat(califStr);
+        if (!isNaN(califNum)) {
+            estudiante.agregarCalificacion(califNum);
+            console.log(`👍 Calificación agregada a ${estudiante.nombre}.`);
+        } else {
+            console.log("⚠️ Calificación inválida.");
+        }
+    }
+    await guardarCurso(curso);
+}
+
+// [3] Consultar promedio por estudiante
+async function opcionConsultarPromedioEstudiante(curso) {
+    if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes en el curso.");
+        return;
+    }
+    const id = await preguntar("Ingrese el ID del estudiante: ");
+    const estudiante = curso.estudiantes.find(e => e.id === id);
+    if (!estudiante) {
+        console.log("⚠️ No se encontró un estudiante con ese ID.");
+        return;
+    }
+    console.log(`Promedio de ${estudiante.nombre}: ${estudiante.calcularPromedio().toFixed(2)}`);
 }
 
 function opcionMostrarPromedios(curso) {
@@ -115,31 +142,50 @@ function opcionMostrarPromedios(curso) {
     console.log(`\nPromedio General del Curso: ${curso.calcularPromedioGeneral().toFixed(2)}`);
 }
 
-function opcionMostrarAprobadosReprobados(curso) {
-    console.log("\n--- Estado de Estudiantes ---");
-     if (curso.estudiantes.length === 0) {
-        console.log("ℹ️ No hay estudiantes en el curso.");
-        return;
-    }
-    console.log(`(Nota mínima para aprobar: ${curso.notaMinimaAprobacion})`);
-
+// [4] Ver lista de aprobados
+function opcionVerAprobados(curso) {
     const aprobados = curso.obtenerAprobados();
-    console.log("\nEstudiantes Aprobados:");
-    if (aprobados.length > 0) {
-        aprobados.forEach(est => console.log(`  - ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`));
+    console.log("\n--- Estudiantes Aprobados ---");
+    if (aprobados.length === 0) {
+        console.log("ℹ️ Ningún estudiante aprobado.");
     } else {
-        console.log("  ℹ️ Ningún estudiante aprobado.");
-    }
-
-    const reprobados = curso.obtenerReprobados();
-    console.log("\nEstudiantes Reprobados:");
-    if (reprobados.length > 0) {
-        reprobados.forEach(est => console.log(`  - ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`));
-    } else {
-        console.log("  ℹ️ Ningún estudiante reprobado.");
+        aprobados.forEach(est => {
+            console.log(`- ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`);
+        });
     }
 }
 
+// [5] Ver lista de reprobados
+function opcionVerReprobados(curso) {
+    const reprobados = curso.obtenerReprobados();
+    console.log("\n--- Estudiantes Reprobados ---");
+    if (reprobados.length === 0) {
+        console.log("ℹ️ Ningún estudiante reprobado.");
+    } else {
+        reprobados.forEach(est => {
+            console.log(`- ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`);
+        });
+    }
+}
+
+// [6] Ver estadísticas generales del grupo
+function opcionVerEstadisticas(curso) {
+    if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes en el curso.");
+        return;
+    }
+    const promedioGeneral = curso.calcularPromedioGeneral();
+    const aprobados = curso.obtenerAprobados().length;
+    const reprobados = curso.obtenerReprobados().length;
+    const total = curso.estudiantes.length;
+    console.log("\n--- Estadísticas Generales ---");
+    console.log(`Total de estudiantes: ${total}`);
+    console.log(`Promedio general del curso: ${promedioGeneral.toFixed(2)}`);
+    console.log(`Aprobados: ${aprobados}`);
+    console.log(`Reprobados: ${reprobados}`);
+}
+
+// [7] Mostrar todos los estudiantes del curso
 function mostrarTodosLosEstudiantes(curso) {
     console.log("\n--- Lista Completa de Estudiantes ---");
     if (curso.estudiantes.length === 0) {
@@ -151,6 +197,10 @@ function mostrarTodosLosEstudiantes(curso) {
     });
 }
 
+// --- Función para esperar a que el usuario presione Enter ---
+async function presioneEnterParaContinuar() {
+    await preguntar("\nPresione Enter para continuar...");
+}
 
 // --- Lógica Principal del Menú ---
 async function menuPrincipal() {
@@ -178,33 +228,57 @@ async function menuPrincipal() {
 
     let continuar = true;
     while (continuar) {
-        console.log("\n--- Menú Principal ---");
-        console.log("1. Crear estudiante y agregarlo al curso");
-        console.log("2. Calcular y mostrar promedio individual y general del curso");
-        console.log("3. Mostrar lista de aprobados y reprobados");
-        console.log("4. Mostrar todos los estudiantes del curso");
-        console.log("0. Salir");
+        console.log(`
+✨✨ ----------------------------------------------✨✨
+--- Bienvenido al sistema de calificaciones escolares ---
+✨✨ ----------------------------------------------✨✨
+[1] ➕   Agregar estudiante
+[2] 🖋️   Agregar nota de estudiante
+[3] 🔎   Consultar promedio por estudiante
+[4] 👀   Ver lista de aprobados
+[5] 💀   Ver lista de reprobados
+[6] 📑   Ver estadísticas generales del grupo
+[7] 👥   Mostrar todos los estudiantes del curso
+[8] 👣   Salir
+        `);
 
         const opcion = await preguntar("Seleccione una opción: ");
 
         switch (opcion) {
             case '1':
                 await opcionCrearEstudiante(cursoIngSoftware);
+                await presioneEnterParaContinuar();
                 break;
             case '2':
-                opcionMostrarPromedios(cursoIngSoftware);
+                await opcionAgregarNotaEstudiante(cursoIngSoftware);
+                await presioneEnterParaContinuar();
                 break;
             case '3':
-                opcionMostrarAprobadosReprobados(cursoIngSoftware);
+                await opcionConsultarPromedioEstudiante(cursoIngSoftware);
+                await presioneEnterParaContinuar();
                 break;
             case '4':
-                mostrarTodosLosEstudiantes(cursoIngSoftware);
+                opcionVerAprobados(cursoIngSoftware);
+                await presioneEnterParaContinuar();
                 break;
-            case '0':
+            case '5':
+                opcionVerReprobados(cursoIngSoftware);
+                await presioneEnterParaContinuar();
+                break;
+            case '6':
+                opcionVerEstadisticas(cursoIngSoftware);
+                await presioneEnterParaContinuar();
+                break;
+            case '7':
+                mostrarTodosLosEstudiantes(cursoIngSoftware);
+                await presioneEnterParaContinuar();
+                break;
+            case '8':
                 continuar = false;
                 break;
             default:
                 console.log("⚠️ Opción no válida. Intente de nuevo.");
+                await presioneEnterParaContinuar();
         }
     }
 
