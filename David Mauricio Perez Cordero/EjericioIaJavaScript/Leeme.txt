@@ -1,5 +1,6 @@
 =====================================
 Simulador de Notas Estudiantiles - Documentación
+Autores: David Mauricio Perez Cordero, Maria Fernanda Patiño Carranza, Andrés Felipe Luengas Sánchez, Kevin Santiago Bautista Zapata.
 =====================================
 
 Objetivo del Proyecto:
