@@ -1,0 +1,44 @@
+{
+  "nombreCurso": "Introducción a la Ingeniería de Software",
+  "notaMinimaAprobacion": 70,
+  "estudiantes": [
+    {
+      "id": "S001",
+      "nombre": "Ana Pérez",
+      "calificaciones": [
+        80,
+        90,
+        75,
+        85
+      ]
+    },
+    {
+      "id": "S002",
+      "nombre": "Luis Gómez",
+      "calificaciones": [
+        50,
+        65,
+        55,
+        60
+      ]
+    },
+    {
+      "id": "S003",
+      "nombre": "Clara Kent",
+      "calificaciones": [
+        95,
+        92,
+        98
+      ]
+    },
+    {
+      "id": "S004",
+      "nombre": "Pedro Paramo",
+      "calificaciones": [
+        60,
+        70,
+        65
+      ]
+    }
+  ]
+}
