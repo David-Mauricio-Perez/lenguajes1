@@ -1,0 +1,194 @@
+=====================================
+Simulador de Notas Estudiantiles - Documentación
+=====================================
+
+Objetivo del Proyecto:
+----------------------
+Este programa simula la gestión de notas de estudiantes para un curso. Permite:
+1. Crear estudiantes con ID, nombre y una lista de calificaciones (en escala 0.0 a 5.0).
+2. Calcular el promedio individual de cada estudiante.
+3. Calcular el promedio general del curso.
+4. Mostrar una lista de estudiantes aprobados y reprobados (nota mínima de aprobación: 3.0).
+5. Persistir los datos del curso en un archivo JSON (`datosDelCurso.json`) para que la información no se pierda entre ejecuciones.
+6. Ofrecer un menú interactivo en la consola para que el usuario realice estas acciones.
+
+Tecnologías y Conceptos de JavaScript Utilizados:
+------------------------------------------------
+- Clases y Objetos: Para modelar `Estudiante` y `Curso`.
+- Módulos ES6: Para organizar el código en archivos separados (`import`/`export`).
+- Funciones: Para encapsular lógica reutilizable.
+- Arrays y sus métodos: `push`, `reduce`, `map`, `filter`, `forEach`.
+- Ciclos: `while` para el menú y la entrada de calificaciones.
+- Condicionales: `if/else`, `switch`.
+- Manejo de JSON: `JSON.stringify()` y `JSON.parse()` para la persistencia de datos.
+- Node.js Core Modules:
+    - `fs/promises`: Para operaciones asíncronas con el sistema de archivos (leer/escribir el JSON).
+    - `path`: Para construir rutas de archivo de forma segura y multiplataforma.
+    - `readline`: Para crear una interfaz de línea de comandos interactiva.
+- Programación Asíncrona: `async/await` para manejar operaciones de entrada/salida (lectura de archivos, entrada del usuario) sin bloquear el programa.
+- Manejo de Errores: Bloques `try/catch` para gestionar posibles excepciones.
+
+Estructura de Archivos del Proyecto:
+------------------------------------
+/proyecto-notas
+|-- Estudiante.js       # Define la clase Estudiante.
+|-- Curso.js            # Define la clase Curso.
+|-- CalcularNotas.js    # Módulo con funciones auxiliares de cálculo (actualmente solo una).
+|-- index.js            # Script principal, maneja el menú y la lógica de la aplicación.
+|-- package.json        # Define el proyecto como un módulo ES6 y puede listar dependencias.
+|-- datosDelCurso.json  # Archivo donde se guardan los datos del curso (se crea automáticamente).
+|-- DOCUMENTACION.txt   # Este archivo.
+
+Descripción Detallada de los Módulos y Clases:
+---------------------------------------------
+
+### 1. `Estudiante.js`
+
+*   **Propósito**: Define la plantilla (clase) para crear objetos que representan a cada estudiante.
+*   **Exporta**: La clase `Estudiante`.
+*   **Clase `Estudiante`**:
+    *   **`constructor(id, nombre, calificaciones = [])`**:
+        *   Se ejecuta al crear una nueva instancia (`new Estudiante(...)`).
+        *   `id`: Identificador único del estudiante (String o Number).
+        *   `nombre`: Nombre completo del estudiante (String).
+        *   `calificaciones`: Array de números que representan las notas del estudiante (por defecto, un array vacío).
+        *   Inicializa las propiedades `this.id`, `this.nombre`, `this.calificaciones`.
+    *   **`agregarCalificacion(calificacion)`**:
+        *   `calificacion`: Un número que es la nota a agregar.
+        *   Añade la `calificacion` al array `this.calificaciones` usando `this.calificaciones.push()`.
+    *   **`calcularPromedio()`**:
+        *   No recibe parámetros.
+        *   Calcula el promedio de las notas en `this.calificaciones`.
+        *   Usa `this.calificaciones.reduce()` para sumar todas las calificaciones.
+        *   Retorna el promedio (Number). Si no hay calificaciones, retorna 0.
+    *   **`estaAprobado(notaMinimaAprobacion)`**:
+        *   `notaMinimaAprobacion`: La nota mínima requerida para aprobar (Number).
+        *   Compara el promedio del estudiante (obtenido de `this.calcularPromedio()`) con `notaMinimaAprobacion`.
+        *   Retorna `true` si el promedio es mayor o igual, `false` en caso contrario (Boolean).
+    *   **`obtenerInformacion()`**:
+        *   No recibe parámetros.
+        *   Retorna una cadena (String) con un resumen de la información del estudiante (ID, nombre, calificaciones, promedio).
+        *   Usa `toFixed(2)` para formatear el promedio a dos decimales.
+    *   **`toJSON()`**:
+        *   Método especial que `JSON.stringify()` buscará y usará al serializar un objeto `Estudiante`.
+        *   Retorna un objeto plano (simple) con las propiedades `id`, `nombre` y `calificaciones`. Esto asegura que solo los datos esenciales se guarden en el JSON, y no métodos o propiedades calculadas dinámicamente si las hubiera.
+    *   **`static fromJSON(json)`**:
+        *   Método estático (se llama directamente desde la clase: `Estudiante.fromJSON(...)`).
+        *   `json`: Un objeto plano que se espera que tenga las propiedades `id`, `nombre`, `calificaciones` (generalmente el resultado de `JSON.parse()` de una parte del archivo JSON).
+        *   Crea y retorna una nueva instancia de `Estudiante` usando los datos del objeto `json`. Esto es crucial para "rehidratar" los objetos desde el JSON, es decir, convertirlos de nuevo en instancias de la clase `Estudiante` con todos sus métodos disponibles.
+        *   Incluye validación básica para asegurar que el objeto `json` tiene la estructura esperada.
+
+### 2. `Curso.js`
+
+*   **Propósito**: Define la plantilla (clase) para crear un objeto que representa el curso, el cual agrupa a múltiples estudiantes.
+*   **Importa**:
+    *   `Estudiante` de `./Estudiante.js`: Para usar `Estudiante.fromJSON()` al cargar datos.
+    *   `calcularPromedioGeneralCurso` de `./CalcularNotas.js`: Para delegar el cálculo del promedio general.
+*   **Exporta**: La clase `Curso`.
+*   **Clase `Curso`**:
+    *   **`constructor(nombreCurso, notaMinimaAprobacion = 3.0)`**:
+        *   `nombreCurso`: Nombre del curso (String).
+        *   `notaMinimaAprobacion`: Nota numérica para aprobar el curso (por defecto 3.0).
+        *   Inicializa `this.nombreCurso`, `this.notaMinimaAprobacion`, y `this.estudiantes` (un array vacío para contener objetos `Estudiante`).
+    *   **`agregarEstudiante(estudiante)`**:
+        *   `estudiante`: Una instancia de la clase `Estudiante`.
+        *   Añade el objeto `estudiante` al array `this.estudiantes`.
+    *   **`calcularPromedioGeneral()`**:
+        *   Delega el cálculo a la función `calcularPromedioGeneralCurso` importada, pasándole `this.estudiantes`.
+        *   Retorna el promedio general del curso (Number).
+    *   **`obtenerAprobados()`**:
+        *   Usa `this.estudiantes.filter()` para crear un nuevo array solo con los estudiantes cuyo método `estaAprobado(this.notaMinimaAprobacion)` retorna `true`.
+        *   Retorna un array de objetos `Estudiante`.
+    *   **`obtenerReprobados()`**:
+        *   Similar a `obtenerAprobados()`, pero filtra los que retornan `false` en `estaAprobado()`.
+        *   Retorna un array de objetos `Estudiante`.
+    *   **`mostrarResultados()`**:
+        *   Imprime en consola un resumen completo del curso: nombre, nota mínima, promedio general, detalle de cada estudiante (usando `est.obtenerInformacion()`), y listas de aprobados/reprobados.
+    *   **`toJSON()`**:
+        *   Similar al `toJSON` de `Estudiante`, prepara el objeto `Curso` para `JSON.stringify()`.
+        *   Retorna un objeto plano con `nombreCurso`, `notaMinimaAprobacion`, y un array de `estudiantes`.
+        *   Importante: Llama a `est.toJSON()` por cada estudiante en el array `this.estudiantes` para asegurar que los estudiantes también se serialicen correctamente.
+    *   **`static fromJSON(json)`**:
+        *   `json`: Un objeto plano con los datos del curso.
+        *   Crea una nueva instancia de `Curso`.
+        *   Itera sobre `json.estudiantes` (que es un array de objetos planos de estudiantes) y usa `Estudiante.fromJSON()` para convertir cada uno en una instancia de `Estudiante` antes de asignarlos a `curso.estudiantes`.
+        *   Retorna la instancia de `Curso` completamente rehidratada.
+
+### 3. `CalcularNotas.js`
+
+*   **Propósito**: Contener funciones de utilidad relacionadas con el cálculo de notas que pueden ser usadas por otras partes del sistema. Actualmente, solo contiene una función principal.
+*   **Exporta**: La función `calcularPromedioGeneralCurso`.
+*   **Función `calcularPromedioGeneralCurso(estudiantes)`**:
+    *   `estudiantes`: Un array de objetos `Estudiante`.
+    *   Usa `estudiantes.map()` para obtener el promedio individual de cada estudiante (llamando a `est.calcularPromedio()`).
+    *   Luego usa `reduce()` sobre los promedios individuales para calcular el promedio general.
+    *   Retorna el promedio general (Number).
+
+### 4. `index.js` (Script Principal y Lógica de Aplicación)
+
+*   **Propósito**: Es el punto de entrada de la aplicación. Orquesta la interacción con el usuario, maneja el menú, y utiliza las clases `Curso` y `Estudiante` para realizar las operaciones. Gestiona la carga y guardado de datos.
+*   **Importa**:
+    *   `Estudiante` de `./Estudiante.js`.
+    *   `Curso` de `./Curso.js`.
+    *   `fs/promises` de Node.js: Para operaciones de archivo asíncronas (leer/escribir `datosDelCurso.json`).
+    *   `path` de Node.js: Para construir rutas de archivo.
+    *   `readline` de Node.js: Para la interfaz de línea de comandos interactiva.
+    *   `fileURLToPath` y `url`: Para obtener `__dirname` en módulos ES6.
+*   **Variables Globales/Constantes**:
+    *   `DATA_FILE_PATH`: Ruta al archivo JSON de persistencia.
+    *   `rl`: Instancia de `readline.createInterface`.
+*   **Funciones Principales**:
+    *   **`preguntar(pregunta)`**:
+        *   Envuelve `rl.question` en una Promesa para usar `await` y simplificar el código asíncrono de entrada del usuario.
+    *   **`guardarCurso(curso)`**:
+        *   Función `async`.
+        *   Serializa el objeto `curso` a una cadena JSON (usando `curso.toJSON()` implícitamente) y lo escribe en `DATA_FILE_PATH` usando `fs.writeFile()`.
+    *   **`cargarCurso()`**:
+        *   Función `async`.
+        *   Intenta leer `DATA_FILE_PATH` usando `fs.readFile()`.
+        *   Si tiene éxito, parsea el contenido JSON y usa `Curso.fromJSON()` para rehidratar el objeto `Curso`.
+        *   Maneja el caso en que el archivo no exista (error `ENOENT`).
+        *   Retorna el objeto `Curso` o `null`.
+    *   **`crearDatosDePrueba(curso)`**:
+        *   Crea instancias de `Estudiante` con datos predefinidos y los agrega al `curso` proporcionado. Las notas están en la escala 0.0-5.0.
+    *   **`opcionCrearEstudiante(curso)`**:
+        *   Función `async`.
+        *   Pide al usuario el ID, nombre y calificaciones (con validación de rango 0.0-5.0).
+        *   Crea un nuevo `Estudiante` y lo agrega al `curso`.
+        *   Llama a `guardarCurso()` para persistir el cambio.
+    *   **`opcionMostrarPromedios(curso)`**:
+        *   Muestra los promedios individuales y el general.
+    *   **`opcionMostrarAprobadosReprobados(curso)`**:
+        *   Muestra las listas de estudiantes según su estado de aprobación.
+    *   **`mostrarTodosLosEstudiantes(curso)`**:
+        *   Muestra la información completa de todos los estudiantes en el curso.
+    *   **`menuPrincipal()`**:
+        *   Función `async` principal.
+        *   Primero, intenta `cargarCurso()`.
+        *   Si no hay curso cargado, pregunta si se desean usar datos de prueba. Crea un nuevo `Curso` (con nota de aprobación 3.0) y opcionalmente lo llena con `crearDatosDePrueba()`.
+        *   Entra en un bucle `while` para mostrar el menú y procesar la opción del usuario.
+        *   Usa un `switch` para llamar a la función de menú correspondiente.
+        *   Al salir (opción '0'), llama a `guardarCurso()` y luego a `rl.close()` (muy importante para que el programa Node.js termine correctamente).
+*   **Ejecución**:
+    *   Llama a `menuPrincipal()`.
+    *   Usa `.catch()` para capturar cualquier error no manejado en la ejecución principal.
+
+### 5. `package.json`
+
+*   **Propósito**: Archivo de metadatos del proyecto Node.js.
+*   **`"type": "module"`**: Clave importante. Le dice a Node.js que los archivos `.js` en este proyecto deben ser tratados como módulos ES6 (permitiendo el uso de `import`/`export`).
+*   Otras secciones como `name`, `version`, `scripts` (para definir comandos como `npm start`) son estándar pero no críticas para la funcionalidad básica de este script si se ejecuta con `node index.js`.
+
+### 6. `datosDelCurso.json`
+
+*   **Propósito**: Almacenar los datos del curso en formato JSON para que persistan entre sesiones.
+*   **Formato**: Un objeto JSON que representa la instancia de la clase `Curso`, con una lista de objetos que representan a los estudiantes. Este formato es el resultado de `JSON.stringify(curso.toJSON())`.
+*   **Creación**: Se crea o sobrescribe automáticamente por el programa (`index.js`) al guardar.
+
+Cómo Ejecutar el Programa:
+---------------------------
+1.  Asegúrate de tener Node.js instalado.
+2.  Abre una terminal o línea de comandos.
+3.  Navega hasta el directorio donde se encuentran los archivos del proyecto.
+4.  Ejecuta el comando: `node index.js`
+5.  Sigue las instrucciones del menú interactivo.

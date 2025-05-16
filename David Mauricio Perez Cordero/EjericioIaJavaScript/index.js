@@ -1,112 +1,221 @@
 // index.js
-// ... (documentación anterior) ...
-// Modificado para usar persistencia en archivo JSON cuando se ejecuta con Node.js
+// Simulador de Notas Estudiantiles Interactivo
+// Utiliza persistencia en archivo JSON.
 
 import { Estudiante } from "./Estudiante.js";
 import { Curso } from "./Curso.js";
-import fs from 'fs/promises'; // Para operaciones de archivo asíncronas
-import path from 'path'; // Para construir rutas de archivo de forma segura
+import fs from 'fs/promises';
+import path from 'path';
+import readline from 'readline'; // Para entrada de usuario
 
-console.log(
-  "--- Simulador de Notas Estudiantiles (con persistencia en archivo JSON) ---"
-);
-
-// __dirname no está disponible directamente en ES Modules, así que usamos import.meta.url
+// --- Configuración Inicial ---
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const DATA_FILE_PATH = path.join(__dirname, 'datosDelCurso.json');
 
-const DATA_FILE_PATH = path.join(__dirname, 'datosDelCurso.json'); // Ruta al archivo JSON
+// Instancia de readline para entrada/salida
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-/**
- * @function guardarCurso
- * @description Serializa el objeto curso a JSON y lo guarda en un archivo.
- * @param {Curso} curso - La instancia del curso a guardar.
- */
+// Función para hacer preguntas y obtener respuestas (promisificada)
+function preguntar(pregunta) {
+    return new Promise(resolve => rl.question(pregunta, resolve));
+}
+
+// --- Funciones de Persistencia (sin cambios) ---
 async function guardarCurso(curso) {
-  try {
-    const cursoJSON = JSON.stringify(curso.toJSON(), null, 2); // Usar toJSON y formatear
-    await fs.writeFile(DATA_FILE_PATH, cursoJSON, 'utf-8');
-    console.log(`Curso "${curso.nombreCurso}" guardado en ${DATA_FILE_PATH}.`);
-  } catch (error) {
-    console.error(`Error al guardar el curso en ${DATA_FILE_PATH}:`, error);
-  }
-}
-
-/**
- * @function cargarCurso
- * @description Carga la cadena JSON desde un archivo y la deserializa a una instancia de Curso.
- * @returns {Promise<Curso|null>} La instancia del curso recuperada o null si no hay datos o hay error.
- */
-async function cargarCurso() {
-  try {
-    const cursoJSON = await fs.readFile(DATA_FILE_PATH, 'utf-8');
-    const cursoData = JSON.parse(cursoJSON);
-    const cursoRecuperado = Curso.fromJSON(cursoData);
-    console.log(
-      `Curso "${cursoRecuperado.nombreCurso}" cargado desde ${DATA_FILE_PATH}.`
-    );
-    return cursoRecuperado;
-  } catch (error) {
-    if (error.code === 'ENOENT') { // ENOENT = Error NO ENTry (file not found)
-      console.log(`No se encontró el archivo de datos: ${DATA_FILE_PATH}. Se creará uno nuevo si es necesario.`);
-    } else {
-      console.error(`Error al cargar el curso desde ${DATA_FILE_PATH}:`, error);
+    try {
+        const cursoJSON = JSON.stringify(curso.toJSON(), null, 2);
+        await fs.writeFile(DATA_FILE_PATH, cursoJSON, 'utf-8');
+        console.log(`\n✅ Curso "${curso.nombreCurso}" guardado en ${DATA_FILE_PATH}.`);
+    } catch (error) {
+        console.error(`\n❌ Error al guardar el curso en ${DATA_FILE_PATH}:`, error);
     }
-    return null;
-  }
 }
 
-// --- Lógica Principal ---
-async function main() {
-  let cursoIngSoftware;
+async function cargarCurso() {
+    try {
+        const cursoJSON = await fs.readFile(DATA_FILE_PATH, 'utf-8');
+        const cursoData = JSON.parse(cursoJSON);
+        const cursoRecuperado = Curso.fromJSON(cursoData);
+        console.log(`\n✅ Curso "${cursoRecuperado.nombreCurso}" cargado desde ${DATA_FILE_PATH}.`);
+        return cursoRecuperado;
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // No se muestra mensaje aquí, se manejará en la lógica de inicialización
+        } else {
+            console.error(`\n❌ Error al cargar el curso desde ${DATA_FILE_PATH}:`, error);
+        }
+        return null;
+    }
+}
 
-  // 1. Intentar cargar el curso desde el archivo JSON
-  cursoIngSoftware = await cargarCurso();
-
-  // 2. Si no se cargó, crear uno nuevo con datos de prueba
-  if (!cursoIngSoftware) {
-    console.log("Creando un nuevo curso con datos de prueba...");
-    cursoIngSoftware = new Curso("Introducción a la Ingeniería de Software", 70);
-
+// --- Funciones para Datos de Prueba ---
+function crearDatosDePrueba(curso) {
+    console.log("\nℹ️ Cargando datos de prueba...");
     const estudiante1 = new Estudiante("S001", "Ana Pérez", [80, 90, 75, 85]);
     const estudiante2 = new Estudiante("S002", "Luis Gómez", [50, 65, 55, 60]);
     const estudiante3 = new Estudiante("S003", "Clara Kent", [95, 92, 98]);
     const estudiante4 = new Estudiante("S004", "Pedro Paramo", [60, 70, 65]);
 
-    cursoIngSoftware.agregarEstudiante(estudiante1);
-    cursoIngSoftware.agregarEstudiante(estudiante2);
-    cursoIngSoftware.agregarEstudiante(estudiante3);
-    cursoIngSoftware.agregarEstudiante(estudiante4);
-
-    // Guardar el curso recién creado en el archivo JSON
-    await guardarCurso(cursoIngSoftware);
-  }
-
-  // 3. Mostrar resultados del curso (cargado o recién creado)
-  if (cursoIngSoftware) {
-    cursoIngSoftware.mostrarResultados();
-
-    // Ejemplo de modificación y guardado:
-    // const nuevoEstudiante = new Estudiante('S005', 'Maria Sol', [88, 92]);
-    // cursoIngSoftware.agregarEstudiante(nuevoEstudiante);
-    // console.log("\n--- Después de agregar a Maria Sol ---");
-    // cursoIngSoftware.mostrarResultados();
-    // await guardarCurso(cursoIngSoftware); // Volver a guardar después de la modificación
-  } else {
-    console.error("No se pudo cargar ni crear el curso.");
-  }
-
-  // Para limpiar el archivo para la próxima ejecución (opcional, para pruebas):
-  // try {
-  //   await fs.unlink(DATA_FILE_PATH);
-  //   console.log(`Archivo ${DATA_FILE_PATH} eliminado para la próxima prueba.`);
-  // } catch (err) {
-  //   if (err.code !== 'ENOENT') console.error("Error al eliminar el archivo de datos:", err);
-  // }
+    curso.agregarEstudiante(estudiante1);
+    curso.agregarEstudiante(estudiante2);
+    curso.agregarEstudiante(estudiante3);
+    curso.agregarEstudiante(estudiante4);
+    console.log("👍 Datos de prueba cargados.");
 }
 
-// Ejecutar la función principal
-main().catch(err => {
-  console.error("Error en la ejecución principal:", err);
+// --- Funciones del Menú ---
+
+async function opcionCrearEstudiante(curso) {
+    console.log("\n--- Crear Nuevo Estudiante ---");
+    const id = await preguntar("Ingrese ID del estudiante: ");
+    const nombre = await preguntar("Ingrese nombre del estudiante: ");
+    const calificaciones = [];
+    let continuarIngresando = true;
+
+    while (continuarIngresando) {
+        const califStr = await preguntar(`Ingrese calificación (o 'fin' para terminar): `);
+        if (califStr.toLowerCase() === 'fin') {
+            continuarIngresando = false;
+        } else {
+            const califNum = parseFloat(califStr);
+            if (!isNaN(califNum)) {
+                calificaciones.push(califNum);
+            } else {
+                console.log("⚠️ Calificación inválida. Por favor ingrese un número.");
+            }
+        }
+    }
+
+    if (id && nombre) {
+        const nuevoEstudiante = new Estudiante(id, nombre, calificaciones);
+        curso.agregarEstudiante(nuevoEstudiante);
+        console.log(`\n👍 Estudiante "${nombre}" agregado al curso.`);
+        await guardarCurso(curso); // Guardar después de agregar
+    } else {
+        console.log("\n⚠️ ID y Nombre son obligatorios. No se agregó el estudiante.");
+    }
+}
+
+function opcionMostrarPromedios(curso) {
+    console.log("\n--- Promedios ---");
+    if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes en el curso para calcular promedios.");
+        return;
+    }
+
+    console.log("Promedios Individuales:");
+    curso.estudiantes.forEach(est => {
+        console.log(`  - ${est.nombre}: ${est.calcularPromedio().toFixed(2)}`);
+    });
+    console.log(`\nPromedio General del Curso: ${curso.calcularPromedioGeneral().toFixed(2)}`);
+}
+
+function opcionMostrarAprobadosReprobados(curso) {
+    console.log("\n--- Estado de Estudiantes ---");
+     if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes en el curso.");
+        return;
+    }
+    console.log(`(Nota mínima para aprobar: ${curso.notaMinimaAprobacion})`);
+
+    const aprobados = curso.obtenerAprobados();
+    console.log("\nEstudiantes Aprobados:");
+    if (aprobados.length > 0) {
+        aprobados.forEach(est => console.log(`  - ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`));
+    } else {
+        console.log("  ℹ️ Ningún estudiante aprobado.");
+    }
+
+    const reprobados = curso.obtenerReprobados();
+    console.log("\nEstudiantes Reprobados:");
+    if (reprobados.length > 0) {
+        reprobados.forEach(est => console.log(`  - ${est.nombre} (Promedio: ${est.calcularPromedio().toFixed(2)})`));
+    } else {
+        console.log("  ℹ️ Ningún estudiante reprobado.");
+    }
+}
+
+function mostrarTodosLosEstudiantes(curso) {
+    console.log("\n--- Lista Completa de Estudiantes ---");
+    if (curso.estudiantes.length === 0) {
+        console.log("ℹ️ No hay estudiantes registrados en el curso.");
+        return;
+    }
+    curso.estudiantes.forEach(est => {
+        console.log(est.obtenerInformacion() + `, Estado: ${est.estaAprobado(curso.notaMinimaAprobacion) ? 'Aprobado' : 'Reprobado'}`);
+    });
+}
+
+
+// --- Lógica Principal del Menú ---
+async function menuPrincipal() {
+    let cursoIngSoftware;
+
+    // Cargar o inicializar curso
+    cursoIngSoftware = await cargarCurso();
+
+    if (!cursoIngSoftware) {
+        console.log("\nℹ️ No se encontraron datos de curso guardados.");
+        const usarPrueba = await preguntar("¿Desea usar datos de prueba? (s/n): ");
+        cursoIngSoftware = new Curso("Introducción a la Ingeniería de Software", 70); // Crear instancia base
+        if (usarPrueba.toLowerCase() === 's') {
+            crearDatosDePrueba(cursoIngSoftware);
+            await guardarCurso(cursoIngSoftware); // Guardar los datos de prueba iniciales
+        } else {
+            console.log("ℹ️ Iniciando con un curso vacío.");
+            // Opcionalmente, guardar el curso vacío para que el archivo exista
+            // await guardarCurso(cursoIngSoftware);
+        }
+    } else {
+        console.log(`\nBienvenido de nuevo al curso: ${cursoIngSoftware.nombreCurso}`);
+    }
+
+
+    let continuar = true;
+    while (continuar) {
+        console.log("\n--- Menú Principal ---");
+        console.log("1. Crear estudiante y agregarlo al curso");
+        console.log("2. Calcular y mostrar promedio individual y general del curso");
+        console.log("3. Mostrar lista de aprobados y reprobados");
+        console.log("4. Mostrar todos los estudiantes del curso");
+        console.log("0. Salir");
+
+        const opcion = await preguntar("Seleccione una opción: ");
+
+        switch (opcion) {
+            case '1':
+                await opcionCrearEstudiante(cursoIngSoftware);
+                break;
+            case '2':
+                opcionMostrarPromedios(cursoIngSoftware);
+                break;
+            case '3':
+                opcionMostrarAprobadosReprobados(cursoIngSoftware);
+                break;
+            case '4':
+                mostrarTodosLosEstudiantes(cursoIngSoftware);
+                break;
+            case '0':
+                continuar = false;
+                break;
+            default:
+                console.log("⚠️ Opción no válida. Intente de nuevo.");
+        }
+    }
+
+    console.log("\n💾 Guardando datos antes de salir...");
+    await guardarCurso(cursoIngSoftware);
+    console.log("👋 ¡Hasta luego!");
+    rl.close(); // Muy importante para que el programa termine
+}
+
+// Ejecutar el menú principal
+menuPrincipal().catch(err => {
+    console.error("\n❌ Error inesperado en la aplicación:", err);
+    rl.close(); // Cerrar readline en caso de error no capturado para permitir salida
 });

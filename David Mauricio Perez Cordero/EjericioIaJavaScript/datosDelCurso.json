@@ -1,43 +1,43 @@
 {
   "nombreCurso": "Introducción a la Ingeniería de Software",
-  "notaMinimaAprobacion": 70,
+  "notaMinimaAprobacion": 3.0,
   "estudiantes": [
     {
       "id": "S001",
-      "nombre": "Ana Pérez",
+      "nombre": "Frank Kafka",
       "calificaciones": [
-        80,
-        90,
-        75,
-        85
+        4.0,
+        4.5,
+        3.8,
+        4.2
       ]
     },
     {
       "id": "S002",
-      "nombre": "Luis Gómez",
+      "nombre": "Nicolai Raskolnikov",
       "calificaciones": [
-        50,
-        65,
-        55,
-        60
+        2.5,
+        2.8,
+        2.0,
+        2.9
       ]
     },
     {
       "id": "S003",
-      "nombre": "Clara Kent",
+      "nombre": "Marco Aurelio",
       "calificaciones": [
-        95,
-        92,
-        98
+        4.8,
+        4.9,
+        5.0
       ]
     },
     {
       "id": "S004",
       "nombre": "Pedro Paramo",
       "calificaciones": [
-        60,
-        70,
-        65
+        3.0,
+        3.5,
+        3.2
       ]
     }
   ]
